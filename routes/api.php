@@ -5,6 +5,22 @@ use Illuminate\Support\Facades\Route;
 use App\Http\Controllers\Api\VoucherApiController;
 
 Route::domain(config('domains.api'))->group(function () {
+    // API Root/Fallback
+    Route::get('/', function () {
+        return response()->json([
+            'status' => 'online',
+            'service' => 'ST Voucher API'
+        ]);
+    });
+
+    Route::get('/host-test', function () {
+        return [
+            'host' => request()->getHost(),
+            'route' => request()->route()?->getName(),
+            'url' => request()->fullUrl(),
+        ];
+    });
+
     Route::middleware('auth:sanctum')->group(function () {
         Route::post('/v1/vouchers/generate', [VoucherApiController::class, 'generate']);
         Route::post('/v1/vouchers/bulk', [VoucherApiController::class, 'bulkGenerate']);

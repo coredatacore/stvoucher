@@ -20,6 +20,14 @@ Route::prefix('install')->name('install.')->group(function () {
 });
 
 // Admin Auth Routes
+Route::get('/host-test', function () {
+    return [
+        'host' => request()->getHost(),
+        'route' => request()->route()?->getName(),
+        'url' => request()->fullUrl(),
+    ];
+});
+
 Route::get('/', function () {
     return redirect()->route('login');
 });
