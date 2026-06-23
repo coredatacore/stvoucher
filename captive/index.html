@@ -1,0 +1,622 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>ST Voucher WiFi</title>
+    <style>
+        * {
+            box-sizing: border-box;
+            margin: 0;
+            padding: 0;
+        }
+        body {
+            background-color: #080000;
+            /* Hexagon pattern + Red glowing effects */
+            background-image: 
+                radial-gradient(ellipse at bottom, rgba(200, 0, 0, 0.4) 0%, transparent 45%),
+                radial-gradient(circle at 50% 25%, rgba(200, 0, 0, 0.4) 0%, transparent 60%),
+                url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='80' height='138.56' viewBox='0 0 80 138.56'%3E%3Cpolygon points='40,0 80,23.09 80,69.28 40,92.37 0,69.28 0,23.09' fill='none' stroke='rgba(255,255,255,0.06)' stroke-width='1.5'/%3E%3Cpolygon points='40,138.56 80,115.47 80,69.28 40,92.37 0,69.28 0,115.47' fill='none' stroke='rgba(255,255,255,0.06)' stroke-width='1.5'/%3E%3C/svg%3E");
+            color: white;
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            min-height: 100vh;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+        }
+
+        .wrapper {
+            width: 100%;
+            max-width: 380px;
+            padding: 20px;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            position: relative;
+            z-index: 1;
+        }
+
+        /* Main Logo Image */
+        .main-logo-container {
+            text-align: center;
+            margin-bottom: -60px;
+            position: relative;
+            z-index: 10;
+            filter: drop-shadow(0 5px 15px rgba(200, 0, 0, 0.5));
+        }
+        .main-logo {
+            width: 120px;
+            height: 120px;
+            border-radius: 50%;
+            object-fit: cover;
+            border: 5px solid #0f0f0f;
+            background-color: #0f0f0f;
+        }
+
+        /* Main Card */
+        .card {
+            width: 100%;
+            border-radius: 20px;
+            box-shadow: 0 15px 35px rgba(0,0,0,0.8), 0 0 20px rgba(200,0,0,0.3);
+            overflow: hidden;
+            margin-bottom: 40px;
+            background: rgba(20, 20, 20, 0.6);
+            backdrop-filter: blur(15px);
+            -webkit-backdrop-filter: blur(15px);
+            border: 1px solid rgba(255, 255, 255, 0.1);
+            position: relative;
+        }
+
+        /* Card Header */
+        .card-header {
+            background: rgba(15, 15, 15, 0.8);
+            padding: 70px 20px 18px 20px;
+            display: flex;
+            justify-content: space-between;
+            align-items: flex-end;
+            border-bottom: 2px solid #cc0000;
+        }
+        .header-left {
+            text-align: left;
+        }
+        .greeting {
+            font-size: 16px;
+            font-weight: bold;
+            color: #fff;
+        }
+        .day {
+            font-size: 11px;
+            color: #aaa;
+            margin-top: 3px;
+        }
+        .time {
+            font-size: 14px;
+            font-weight: 600;
+            color: #fff;
+            letter-spacing: 1px;
+        }
+
+        /* Card Body */
+        .card-body {
+            background-color: transparent;
+            padding: 25px 20px;
+        }
+
+        /* Form Elements */
+        .input-wrapper {
+            position: relative;
+            margin-bottom: 15px;
+        }
+        .form-select {
+            width: 100%;
+            padding: 14px 20px;
+            border: 1px solid rgba(255, 255, 255, 0.2);
+            border-radius: 25px;
+            font-size: 14px;
+            color: #fff;
+            appearance: none;
+            background-color: rgba(0, 0, 0, 0.5);
+            outline: none;
+            font-weight: 600;
+            box-shadow: inset 0 2px 5px rgba(0,0,0,0.2);
+        }
+        .form-select option {
+            background-color: #111;
+            color: #fff;
+        }
+        .select-icon {
+            position: absolute;
+            right: 18px;
+            top: 50%;
+            transform: translateY(-50%);
+            width: 18px;
+            height: 18px;
+            pointer-events: none;
+            stroke: #fff;
+        }
+        .form-control {
+            width: 100%;
+            padding: 14px 20px 14px 45px;
+            border: 1px solid rgba(255, 255, 255, 0.2);
+            border-radius: 25px;
+            font-size: 14px;
+            color: #fff;
+            outline: none;
+            background-color: rgba(0, 0, 0, 0.5);
+            box-shadow: inset 0 2px 5px rgba(0,0,0,0.2);
+            font-weight: 500;
+            transition: border-color 0.3s;
+        }
+        .form-control:focus {
+            border-color: #cc0000;
+        }
+        .form-control::placeholder {
+            color: #aaa;
+            font-weight: 400;
+        }
+        .input-icon {
+            position: absolute;
+            left: 18px;
+            top: 50%;
+            transform: translateY(-50%);
+            width: 20px;
+            height: 20px;
+            opacity: 0.8;
+            fill: #fff;
+        }
+
+        /* Buttons */
+        .btn {
+            width: 100%;
+            padding: 15px;
+            border: none;
+            border-radius: 25px;
+            font-size: 15px;
+            font-weight: 800;
+            letter-spacing: 1px;
+            cursor: pointer;
+            transition: transform 0.1s, opacity 0.2s;
+        }
+        .btn:active {
+            transform: scale(0.98);
+        }
+        .btn-connect {
+            background-color: #cc0000;
+            color: white;
+            margin-top: 10px;
+            box-shadow: 0 4px 15px rgba(204, 0, 0, 0.4);
+        }
+        .btn-promo {
+            background-color: rgba(255, 255, 255, 0.1);
+            border: 1px solid rgba(255, 255, 255, 0.2);
+            color: white;
+            margin-top: 15px;
+            box-shadow: 0 4px 15px rgba(0, 0, 0, 0.3);
+        }
+
+        /* Modal Rates */
+        .modal-overlay {
+            position: fixed;
+            top: 0; left: 0; width: 100%; height: 100%;
+            background: rgba(0, 0, 0, 0.8);
+            backdrop-filter: blur(5px);
+            -webkit-backdrop-filter: blur(5px);
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            z-index: 2000;
+            opacity: 0;
+            pointer-events: none;
+            transition: opacity 0.3s ease;
+        }
+        .modal-overlay.active {
+            opacity: 1;
+            pointer-events: auto;
+        }
+        .modal-content {
+            background: rgba(20, 20, 20, 0.95);
+            border: 1px solid rgba(204, 0, 0, 0.5);
+            border-radius: 20px;
+            width: 90%;
+            max-width: 350px;
+            padding: 25px;
+            transform: scale(0.9);
+            transition: transform 0.3s ease;
+            box-shadow: 0 10px 30px rgba(204, 0, 0, 0.3);
+            color: white;
+            position: relative;
+        }
+        .modal-overlay.active .modal-content {
+            transform: scale(1);
+        }
+        .modal-close {
+            position: absolute;
+            top: 15px; right: 15px;
+            background: none; border: none;
+            color: #aaa; font-size: 24px;
+            cursor: pointer; transition: color 0.2s;
+        }
+        .modal-close:hover { color: white; }
+        .rates-title {
+            font-size: 16px;
+            font-weight: 800;
+            text-align: center;
+            margin-bottom: 20px;
+            color: #fff;
+            letter-spacing: 1px;
+        }
+        .rate-item {
+            display: flex;
+            justify-content: space-between;
+            font-size: 15px;
+            padding: 12px 10px;
+            border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+            font-weight: 600;
+        }
+        .rate-item:last-child {
+            border-bottom: none;
+        }
+        .rate-price {
+            color: #cc0000;
+            font-weight: 800;
+        }
+
+        /* Success State */
+        .success-overlay {
+            position: absolute;
+            top: 0; left: 0; width: 100%; height: 100%;
+            background: rgba(15, 15, 15, 0.95);
+            backdrop-filter: blur(10px);
+            -webkit-backdrop-filter: blur(10px);
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+            align-items: center;
+            z-index: 100;
+            opacity: 0;
+            pointer-events: none;
+            transition: opacity 0.5s ease;
+            border-radius: 20px;
+        }
+        .success-overlay.active {
+            opacity: 1;
+            pointer-events: auto;
+        }
+        .success-icon {
+            width: 80px; height: 80px;
+            margin-bottom: 20px;
+            fill: #28a745;
+            animation: pulse 2s infinite;
+        }
+        .success-text {
+            font-size: 20px;
+            font-weight: bold;
+            color: white;
+            margin-bottom: 10px;
+        }
+        .success-subtext {
+            font-size: 14px;
+            color: #aaa;
+        }
+        @keyframes pulse {
+            0% { transform: scale(0.95); filter: drop-shadow(0 0 0 rgba(40, 167, 69, 0.7)); }
+            70% { transform: scale(1); filter: drop-shadow(0 0 15px rgba(40, 167, 69, 0)); }
+            100% { transform: scale(0.95); filter: drop-shadow(0 0 0 rgba(40, 167, 69, 0)); }
+        }
+
+        /* Floating Logout */
+        .floating-logout {
+            position: fixed;
+            bottom: 20px;
+            right: 20px;
+            background: linear-gradient(135deg, #cc0000, #880000);
+            color: white;
+            width: 60px;
+            height: 60px;
+            border-radius: 50%;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            text-decoration: none;
+            box-shadow: 0 4px 15px rgba(204, 0, 0, 0.5);
+            transition: all 0.3s ease;
+            z-index: 1000;
+            opacity: 0;
+            pointer-events: none;
+            transform: translateY(20px);
+        }
+        .floating-logout.show {
+            opacity: 1;
+            pointer-events: auto;
+            transform: translateY(0);
+        }
+        .floating-logout:hover {
+            transform: translateY(-5px) scale(1.05);
+            box-shadow: 0 6px 20px rgba(204, 0, 0, 0.7);
+        }
+        .logout-icon {
+            width: 24px; height: 24px; fill: white;
+        }
+
+        /* Footer */
+        .footer-text {
+            text-align: center;
+            font-weight: 700;
+            letter-spacing: 1px;
+            text-shadow: 0 2px 4px rgba(0,0,0,0.8);
+        }
+        .footer-text p:first-child {
+            color: #ffcccc;
+            font-size: 13px;
+            margin-bottom: 5px;
+        }
+        .footer-text p:last-child {
+            color: #ffffff;
+            font-size: 11px;
+            opacity: 0.8;
+        }
+
+        .mb-2 { margin-bottom: 12px; }
+    </style>
+</head>
+<body>
+    <div class="wrapper">
+        <!-- Main Logo -->
+        <div class="main-logo-container">
+            <img src="image/logo.png" alt="ST Voucher WiFi Logo" class="main-logo">
+        </div>
+
+        <!-- Main Card -->
+        <div class="card">
+            <!-- Dynamic Header -->
+            <div class="card-header">
+                <div class="header-left">
+                    <div id="greeting" class="greeting">Good Morning</div>
+                    <div id="day" class="day">Today is Tuesday</div>
+                </div>
+                <div id="time" class="time">10:57:30</div>
+            </div>
+            
+            <!-- Card Body / Form -->
+            <div class="card-body">
+                <form id="auth-form" onsubmit="handleLogin(event)">
+                    
+                    <!-- Access Type Dropdown -->
+                    <div class="input-wrapper">
+                        <select id="access-type" class="form-select" onchange="toggleAuth()">
+                            <option value="voucher">Voucher Access</option>
+                            <option value="local">Local Account</option>
+                        </select>
+                        <!-- Chevron Down Icon -->
+                        <svg class="select-icon" viewBox="0 0 24 24" fill="none" stroke="#333" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M6 9l6 6 6-6"/></svg>
+                    </div>
+
+                    <!-- Voucher Section -->
+                    <div id="voucher-section">
+                        <div class="input-wrapper">
+                            <!-- Ticket Icon -->
+                            <svg class="input-icon" viewBox="0 0 24 24" fill="#999"><path d="M22 10V6c0-1.1-.9-2-2-2H4c-1.1 0-1.99.9-1.99 2v4c1.1 0 1.99.9 1.99 2s-.89 2-2 2v4c0 1.1.9 2 2 2h16c1.1 0 2-.9 2-2v-4c-1.1 0-2-.9-2-2s.9-2 2-2zm-2-1.46c-1.19.69-2 1.99-2 3.46s.81 2.77 2 3.46V18H4v-2.54c1.19-.69 2-1.99 2-3.46s-.81-2.77-2-3.46V6h16v2.54zM11 15h2v2h-2zm0-4h2v2h-2zm0-4h2v2h-2z"/></svg>
+                            <input type="text" name="voucherCode" id="voucher-code" class="form-control" placeholder="Voucher Code" autocomplete="off">
+                        </div>
+                    </div>
+
+                    <!-- Local Account Section -->
+                    <div id="local-section" style="display: none;">
+                        <div class="input-wrapper mb-2">
+                            <!-- User Icon -->
+                            <svg class="input-icon" viewBox="0 0 24 24" fill="#999"><path d="M12 12c2.21 0 4-1.79 4-4s-1.79-4-4-4-4 1.79-4 4 1.79 4 4 4zm0 2c-2.67 0-8 1.34-8 4v2h16v-2c0-2.66-5.33-4-8-4z"/></svg>
+                            <input type="text" name="username" id="username" class="form-control" placeholder="Username" autocomplete="off">
+                        </div>
+                        <div class="input-wrapper">
+                            <!-- Lock Icon -->
+                            <svg class="input-icon" viewBox="0 0 24 24" fill="#999"><path d="M18 8h-1V6c0-2.76-2.24-5-5-5S7 3.24 7 6v2H6c-1.1 0-2 .9-2 2v10c0 1.1.9 2 2 2h12c1.1 0 2-.9 2-2V10c0-1.1-.9-2-2-2zm-6 9c-1.1 0-2-.9-2-2s.9-2 2-2 2 .9 2 2-.9 2-2 2zm3.1-9H8.9V6c0-1.71 1.39-3.1 3.1-3.1 1.71 0 3.1 1.39 3.1 3.1v2z"/></svg>
+                            <input type="password" name="password" id="password" class="form-control" placeholder="Password">
+                        </div>
+                    </div>
+
+                    <!-- Action Buttons -->
+                    <button type="submit" class="btn btn-connect" id="btn-connect">CONNECT</button>
+                    <button type="button" class="btn btn-promo" onclick="togglePromo()">PROMO RATES</button>
+                </form>
+
+                <!-- Hidden Promo Rates removed from here -->
+            </div>
+            
+            <!-- Success Overlay -->
+            <div id="success-state" class="success-overlay">
+                <svg class="success-icon" viewBox="0 0 24 24">
+                    <path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm-2 15l-5-5 1.41-1.41L10 14.17l7.59-7.59L19 8l-9 9z"/>
+                </svg>
+                <div class="success-text">Connected Successfully</div>
+                <div class="success-subtext">Redirecting...</div>
+            </div>
+        </div>
+
+        <!-- Footer -->
+        <div class="footer-text">
+            <p>ENJOY UNLIMITED WIFI</p>
+            <p>ST VOUCHER WIFI. 2026</p>
+        </div>
+    </div>
+
+    <!-- Rates Modal -->
+    <div id="rates-modal" class="modal-overlay">
+        <div class="modal-content">
+            <button class="modal-close" onclick="togglePromo()">×</button>
+            <div class="rates-title">WIFI RATES</div>
+            <div class="rate-item"><span>5 Hours</span><span class="rate-price">₱10</span></div>
+            <div class="rate-item"><span>24 Hours</span><span class="rate-price">₱30</span></div>
+            <div class="rate-item"><span>30 Days</span><span class="rate-price">₱300</span></div>
+        </div>
+    </div>
+
+    <!-- Floating Logout Button -->
+    <a href="http://portal.tplink.net/logout" id="floating-logout" class="floating-logout" title="Logout">
+        <svg class="logout-icon" viewBox="0 0 24 24">
+            <path d="M17 7l-1.41 1.41L18.17 11H8v2h10.17l-2.58 2.58L17 17l5-5zM4 5h8V3H4c-1.1 0-2 .9-2 2v14c0 1.1.9 2 2 2h8v-2H4V5z"/>
+        </svg>
+    </a>
+
+    <!-- Scripts -->
+    <script>
+        // Real-time clock and dynamic greeting
+        function updateTime() {
+            const now = new Date();
+            const hours = now.getHours();
+            
+            let greeting = "Good Evening";
+            if (hours < 12) greeting = "Good Morning";
+            else if (hours < 18) greeting = "Good Afternoon";
+            
+            const days = ["Sunday", "Monday", "Tuesday", "Wednesday", "Thursday", "Friday", "Saturday"];
+            
+            document.getElementById('greeting').innerText = greeting;
+            document.getElementById('day').innerText = "Today is " + days[now.getDay()];
+            
+            let h = hours;
+            let m = now.getMinutes();
+            let s = now.getSeconds();
+            let ampm = h >= 12 ? 'PM' : 'AM';
+            
+            h = h % 12;
+            h = h ? h : 12; // the hour '0' should be '12'
+            h = h < 10 ? '0' + h : h;
+            m = m < 10 ? '0' + m : m;
+            s = s < 10 ? '0' + s : s;
+            
+            document.getElementById('time').innerText = h + ':' + m + ':' + s + ' ' + ampm;
+        }
+        setInterval(updateTime, 1000);
+        updateTime(); // initial call
+
+        // Toggle between Voucher and Local login
+        function toggleAuth() {
+            const type = document.getElementById('access-type').value;
+            const voucherSection = document.getElementById('voucher-section');
+            const localSection = document.getElementById('local-section');
+            const voucherInput = document.getElementById('voucher-code');
+            const userInput = document.getElementById('username');
+            const passInput = document.getElementById('password');
+
+            if (type === 'voucher') {
+                voucherSection.style.display = 'block';
+                localSection.style.display = 'none';
+                voucherInput.required = true;
+                userInput.required = false;
+                passInput.required = false;
+            } else {
+                voucherSection.style.display = 'none';
+                localSection.style.display = 'block';
+                voucherInput.required = false;
+                userInput.required = true;
+                passInput.required = true;
+            }
+        }
+
+        // Toggle Promo Rates visibility
+        function togglePromo() {
+            const modal = document.getElementById('rates-modal');
+            if (modal.classList.contains('active')) {
+                modal.classList.remove('active');
+            } else {
+                modal.classList.add('active');
+            }
+        }
+
+        // Close modal when clicking outside
+        document.getElementById('rates-modal').addEventListener('click', function(e) {
+            if (e.target === this) {
+                togglePromo();
+            }
+        });
+
+        // Initialize form state
+        document.addEventListener("DOMContentLoaded", function() {
+            toggleAuth();
+
+            // If accessed manually (no Omada params), user might be already connected
+            if (!getQueryParam('clientMac')) {
+                document.getElementById('floating-logout').classList.add('show');
+            }
+        });
+
+        // Official Omada Authentication Flow
+        function getQueryParam(name) { 
+            const urlParams = new URLSearchParams(window.location.search); 
+            return urlParams.get(name); 
+        } 
+
+        async function handleLogin(event) { 
+            event.preventDefault(); 
+            
+            const btn = document.getElementById('btn-connect');
+            const originalText = btn.innerHTML;
+            btn.innerHTML = 'CONNECTING...';
+            btn.style.opacity = '0.8';
+            btn.disabled = true;
+
+            const accessType = document.getElementById('access-type').value; 
+
+            let payload = { 
+                clientMac: getQueryParam('clientMac'), 
+                apMac: getQueryParam('apMac'), 
+                gatewayMac: getQueryParam('gatewayMac'), 
+                ssidName: getQueryParam('ssidName'), 
+                radioId: getQueryParam('radioId'), 
+                vid: getQueryParam('vid'), 
+                originUrl: getQueryParam('originUrl') 
+            }; 
+
+            if(accessType === 'voucher') { 
+                payload.authType = 3; 
+                payload.voucherCode = document.getElementById('voucher-code').value; 
+            } 
+
+            if(accessType === 'local') { 
+                payload.authType = 5; 
+                payload.localuser = document.getElementById('username').value; 
+                payload.localuserPsw = document.getElementById('password').value; 
+            } 
+
+            try { 
+                const response = await fetch('/portal/auth', { 
+                    method: 'POST', 
+                    headers: { 
+                        'Content-Type': 'application/json' 
+                    }, 
+                    body: JSON.stringify(payload) 
+                }); 
+
+                const result = await response.json(); 
+
+                if(result.errorCode === 0) { 
+                    btn.innerHTML = 'CONNECTED!';
+                    btn.style.backgroundColor = '#28a745'; // Green
+                    
+                    // Show success state and floating logout button
+                    document.getElementById('success-state').classList.add('active');
+                    document.getElementById('floating-logout').classList.add('show');
+                    
+                    // Optional auto redirect delay
+                    setTimeout(() => {
+                        window.location.href = result.result || result.data?.redirectUrl || 'http://www.google.com'; 
+                    }, 2500); // 2.5 seconds delay
+                } else { 
+                    alert('Login Failed: ' + (result.msg || 'Invalid parameters')); 
+                    console.log(result); 
+                    btn.innerHTML = originalText;
+                    btn.style.opacity = '1';
+                    btn.disabled = false;
+                } 
+
+            } catch(err) { 
+                console.error(err); 
+                alert('Connection Error'); 
+                btn.innerHTML = originalText;
+                btn.style.opacity = '1';
+                btn.disabled = false;
+            } 
+        }
+    </script>
+</body>
+</html>
