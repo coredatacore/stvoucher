@@ -3,84 +3,107 @@
 namespace App\Services;
 
 use App\Models\Voucher;
-use App\Models\VoucherProfile;
-use App\Models\Radcheck;
+use App\Models\Plan;
+use App\Models\User;
+use App\Models\RouterServer;
+use App\Repositories\VoucherRepository;
+use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Str;
+use Exception;
 
 class VoucherService
 {
-    public function generateSingle(VoucherProfile $profile, string $format, ?string $prefix = null, ?int $siteId = null)
+    protected VoucherRepository $voucherRepository;
+
+    public function __construct(VoucherRepository $voucherRepository)
     {
-        $code = $this->generateCode($format, $prefix);
-
-        // Add to vouchers table
-        $voucher = Voucher::create([
-            'site_id' => $siteId,
-            'voucher_code' => $code,
-            'profile_id' => $profile->id,
-            'status' => 'unused',
-            'price' => $profile->price,
-            'duration_seconds' => $profile->duration * $this->getMultiplier($profile->duration_unit),
-            'generated_by' => \Illuminate\Support\Facades\Auth::user()?->name ?? 'System',
-            'created_by' => \Illuminate\Support\Facades\Auth::user()?->name ?? 'System',
-        ]);
-
-        // Add to radcheck
-        Radcheck::create([
-            'username' => $code,
-            'attribute' => 'Cleartext-Password',
-            'op' => ':=',
-            'value' => $code,
-        ]);
-
-        // Add session timeout to radcheck
-        if ($profile->duration > 0) {
-            $timeoutSeconds = $profile->duration * $this->getMultiplier($profile->duration_unit);
-            Radcheck::create([
-                'username' => $code,
-                'attribute' => 'Max-All-Session', // Using Max-All-Session or Session-Timeout depending on FreeRADIUS config. Usually Max-All-Session for total time.
-                'op' => ':=',
-                'value' => $timeoutSeconds,
-            ]);
-        }
-
-        return $voucher;
+        $this->voucherRepository = $voucherRepository;
     }
 
-    public function generateBulk(VoucherProfile $profile, int $quantity, string $format, ?string $prefix = null, ?int $siteId = null)
+    public function generateVoucher(Plan $plan, User $createdBy, ?int $routerServerId = null): Voucher
+    {
+        return DB::transaction(function () use ($plan, $createdBy, $routerServerId) {
+            $code = strtoupper(Str::random(8));
+            $username = $code;
+            $password = Str::random(8);
+
+            if ($routerServerId) {
+                $routerServer = RouterServer::find($routerServerId);
+            }
+            
+            if (empty($routerServer)) {
+                $routerServer = RouterServer::first();
+            }
+
+            if (!$routerServer || empty($routerServer->ip_address)) {
+                throw new Exception('Router Server details are not configured. Please setup the Router Server first.');
+            }
+
+            $mikrotikService = new MikroTikService($routerServer);
+
+            // Step 1: CREATE HOTSPOT USER FIRST on MikroTik
+            $tempVoucher = new Voucher([
+                'username' => $username,
+                'password' => $password,
+            ]);
+
+            $addResult = $mikrotikService->addHotspotUser($tempVoucher);
+            $mikrotikUserId = $addResult['user_id'] ?? null;
+
+            if (!$mikrotikUserId) {
+                throw new Exception('Failed to retrieve MikroTik user ID');
+            }
+
+            // Step 2: VERIFY user exists on MikroTik
+            $verifyResult = $mikrotikService->verifyHotspotUserExists($tempVoucher->username);
+            if (!$verifyResult['exists']) {
+                // Try to clean up the user we just created before throwing
+                try {
+                    $mikrotikService->removeHotspotUser($tempVoucher);
+                } catch (\Exception $cleanupEx) {
+                    // Ignore cleanup errors
+                }
+                throw new Exception('Created user not found in MikroTik');
+            }
+
+            // Step 3: NOW that MikroTik is successful, save to database!
+            $voucher = $this->voucherRepository->create([
+                'code' => $code,
+                'username' => $username,
+                'password' => $password,
+                'plan_id' => $plan->id,
+                'router_server_id' => $routerServerId,
+                'created_by' => $createdBy->id,
+                'status' => 'active', // Already active since MikroTik user is created
+                'mikrotik_user_id' => $mikrotikUserId,
+            ]);
+
+            return $voucher;
+        });
+    }
+
+    public function generateBulkVouchers(Plan $plan, User $createdBy, int $count, ?int $routerServerId = null): array
     {
         $vouchers = [];
-        for ($i = 0; $i < $quantity; $i++) {
-            $vouchers[] = $this->generateSingle($profile, $format, $prefix, $siteId);
+        $successCount = 0;
+        $lastException = null;
+
+        for ($i = 0; $i < $count; $i++) {
+            try {
+                // Each voucher is in its own transaction
+                $vouchers[] = $this->generateVoucher($plan, $createdBy, $routerServerId);
+                $successCount++;
+            } catch (\Exception $e) {
+                $lastException = $e;
+                // Continue to next voucher if one fails
+                // We don't want to fail the entire bulk operation because of one bad voucher
+            }
+        }
+
+        if ($successCount === 0 && $lastException) {
+            throw $lastException;
         }
 
         return $vouchers;
-    }
-
-    protected function generateCode(string $format, ?string $prefix = null)
-    {
-        do {
-            $code = match ($format) {
-                'numeric' => random_int(10000000, 99999999),
-                'alpha' => strtoupper(Str::random(8)),
-                '10_chars' => strtoupper(Str::random(10)),
-                default => strtoupper(Str::random(8)), // 8_chars
-            };
-            if ($prefix) {
-                $code = $prefix . $code;
-            }
-        } while (Voucher::where('voucher_code', $code)->exists());
-
-        return $code;
-    }
-
-    protected function getMultiplier(string $unit)
-    {
-        return match (strtolower($unit)) {
-            'minutes' => 60,
-            'hours' => 3600,
-            'days' => 86400,
-            default => 3600,
-        };
     }
 }
