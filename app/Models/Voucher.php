@@ -2,63 +2,50 @@
 
 namespace App\Models;
 
+use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 
 class Voucher extends Model
 {
+    use HasFactory;
+
     protected $fillable = [
-        'code',
-        'username',
-        'password',
-        'mac_address',
-        'plan_id',
-        'router_server_id',
-        'mikrotik_user_id',
-        'created_by',
+        'site_id',
+        'voucher_code',
+        'profile_id',
         'status',
-        'activated_at',
+        'price',
+        'duration_seconds',
+        'generated_by',
+        'created_by',
+        'used_at',
+        'first_login_at',
         'expires_at',
-        'valid_until',
-        'paused_at',
-        'remaining_seconds_when_paused',
-        'pause_count',
-        'data_used_mb',
+        'last_seen_at',
+        'mac_address',
+        'ip_address',
+        'nas_ip',
+        'nas_id',
+        'notes',
     ];
 
-    protected $casts = [
-        'activated_at' => 'datetime',
-        'expires_at' => 'datetime',
-        'valid_until' => 'datetime',
-        'paused_at' => 'datetime',
-    ];
-
-    public function plan()
+    protected function casts(): array
     {
-        return $this->belongsTo(Plan::class);
+        return [
+            'used_at' => 'datetime',
+            'first_login_at' => 'datetime',
+            'expires_at' => 'datetime',
+            'last_seen_at' => 'datetime',
+        ];
     }
 
-    public function routerServer()
+    public function site()
     {
-        return $this->belongsTo(RouterServer::class);
+        return $this->belongsTo(Site::class);
     }
 
-    public function createdBy()
+    public function profile()
     {
-        return $this->belongsTo(User::class, 'created_by');
-    }
-
-    public function voucherLogs()
-    {
-        return $this->hasMany(VoucherLog::class);
-    }
-
-    public function transaction()
-    {
-        return $this->hasOne(Transaction::class);
-    }
-
-    public function mikrotikLogs()
-    {
-        return $this->hasMany(MikrotikLog::class);
+        return $this->belongsTo(VoucherProfile::class, 'profile_id');
     }
 }
